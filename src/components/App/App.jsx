@@ -1,5 +1,5 @@
 import React from 'react';
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import {
   NotificationContainer,
   NotificationManager,
@@ -13,88 +13,72 @@ import { Button } from 'components/Button/Button';
 import { Loader } from 'components/Loader/Loader';
 import { AppStyles } from './App.styled';
 
-export class App extends Component {
-  state = {
-    images: [],
-    page: 1,
-    query: '',
-    isLoading: false,
-    totalHits: 0,
-    error: false,
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [totalHits, setTotalHits] = useState(0);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (query) {
+      getImgCollection(query, page);
+    }
+  }, [query, page]);
+
+  const checkTotalHits = page => {
+    return page * 12 < totalHits;
   };
 
-  componentDidUpdate(_, prevState) {
-    const { page, query } = this.state;
-    if (prevState.page !== page || prevState.query !== query) {
-      this.getImgCollection(query, page);
-    }
-  }
-
-  checkTotalHits(page) {
-    return page * 12 < this.state.totalHits;
-  }
-
-  getImgCollection = async (query, page) => {
+  const getImgCollection = async (query, page) => {
     try {
-      this.setState({ isLoading: true });
+      setIsLoading(true);
       const data = await API.getImgCollection(query, page);
-      const images = data.hits;
-      const totalHits = data.totalHits;
-      if (!images.length) {
+      const newImages = data.hits;
+      if (!newImages.length) {
         NotificationManager.warning('Sorry, No matches for your search');
       }
-      this.setState(prevState => ({
-        images: [...prevState.images, ...images],
-        totalHits,
-      }));
+      setImages(prev => [...prev, ...newImages]);
+      setTotalHits(data.totalHits);
     } catch (erorr) {
-      this.setState({ error: true });
+      setError(true);
       NotificationManager.warning('Sorry, something went wrong');
     } finally {
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     }
   };
 
-  handleSubmit = async e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     const queryData = e.target.seachField.value;
-    if (queryData === this.state.query) {
-      this.setState({
-        page: 1,
-      });
-    } else {
-      this.setState({
-        query: queryData,
-        page: 1,
-        images: [],
-        totalHits: 0,
-      });
-    }
+    setImages([]);
+    setTotalHits(0);
+    setQuery(queryData);
+    setPage(1);
     e.target.seachField.value = '';
   };
 
-  handleMoreImage = async () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handleMoreImage = () => {
+    setPage(prev => prev + 1);
   };
 
-  render() {
-    const { images } = this.state;
-    return (
-      <AppStyles>
-        <Searchbar onSubmit={this.handleSubmit}></Searchbar>
+  return (
+    <AppStyles>
+      <Searchbar onSubmit={handleSubmit}></Searchbar>
 
-        {images.length !== 0 && <ImageGallery images={images}></ImageGallery>}
-        {this.state.isLoading === true && <Loader></Loader>}
+      {images.length !== 0 && <ImageGallery images={images}></ImageGallery>}
+      {isLoading === true && <Loader></Loader>}
 
-        {this.state.query !== '' &&
-          this.state.images.length !== 0 &&
-          this.state.isLoading !== true &&
-          this.checkTotalHits(this.state.page) && (
-            <Button handleMoreImage={this.handleMoreImage}></Button>
-          )}
+      {query !== '' &&
+        images.length !== 0 &&
+        isLoading !== true &&
+        checkTotalHits(page) && (
+          <Button handleMoreImage={handleMoreImage}></Button>
+        )}
 
-        <NotificationContainer />
-      </AppStyles>
-    );
-  }
-}
+      <NotificationContainer />
+    </AppStyles>
+  );
+};

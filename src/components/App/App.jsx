@@ -23,41 +23,39 @@ export const App = () => {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (query) {
-      getImgCollection(query, page);
+    if (!query) {
+      return;
     }
-  }, [query, page]);
+    const getImgCollection = async (query, page) => {
+      try {
+        setIsLoading(true);
+        const data = await API.getImgCollection(query, page);
+        const newImages = data.hits;
+        if (!newImages.length) {
+          NotificationManager.warning('Sorry, No matches for your search');
+        }
+        setImages(prev => [...prev, ...newImages]);
+        setTotalHits(data.totalHits);
+      } catch (erorr) {
+        setError(true);
+        NotificationManager.warning('Sorry, something went wrong');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getImgCollection(query, page);
+  }, [page, query]);
 
   const checkTotalHits = page => {
     return page * 12 < totalHits;
   };
 
-  const getImgCollection = async (query, page) => {
-    try {
-      setIsLoading(true);
-      const data = await API.getImgCollection(query, page);
-      const newImages = data.hits;
-      if (!newImages.length) {
-        NotificationManager.warning('Sorry, No matches for your search');
-      }
-      setImages(prev => [...prev, ...newImages]);
-      setTotalHits(data.totalHits);
-    } catch (erorr) {
-      setError(true);
-      NotificationManager.warning('Sorry, something went wrong');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    const queryData = e.target.seachField.value;
+  const handleSubmit = async queryData => {
     setImages([]);
     setTotalHits(0);
     setQuery(queryData);
     setPage(1);
-    e.target.seachField.value = '';
   };
 
   const handleMoreImage = () => {
@@ -66,7 +64,7 @@ export const App = () => {
 
   return (
     <AppStyles>
-      <Searchbar onSubmit={handleSubmit}></Searchbar>
+      <Searchbar handleSubmit={handleSubmit}></Searchbar>
 
       {images.length !== 0 && <ImageGallery images={images}></ImageGallery>}
       {isLoading === true && <Loader></Loader>}

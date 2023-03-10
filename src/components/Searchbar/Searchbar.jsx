@@ -1,7 +1,5 @@
 import PropTypes from 'prop-types';
-
-import React from 'react';
-import { Component } from 'react';
+import { useState } from 'react';
 import {
   SearchbarFormBox,
   SearchForm,
@@ -10,38 +8,41 @@ import {
 } from './Searchbar.styled';
 import { FaSearch } from 'react-icons/fa';
 
-export class Searchbar extends Component {
-  static propTypes = {
-    props: PropTypes.node,
+export const Searchbar = ({ handleSubmit }) => {
+  const [query, setQuery] = useState('');
+
+  const handleChange = event => {
+    setQuery(event.target.value);
   };
 
-  state = {
-    query: '',
+  const onSubmit = e => {
+    e.preventDefault();
+    handleSubmit(query);
+    e.target.seachField.value = '';
+    setQuery('');
   };
 
-  handleChange = event => {
-    this.setState({ query: event.target.value });
-  };
+  return (
+    <SearchbarFormBox>
+      <SearchForm onSubmit={onSubmit}>
+        <SearchFormBtn type="submit">
+          <FaSearch />
+        </SearchFormBtn>
 
-  render() {
-    return (
-      <SearchbarFormBox>
-        <SearchForm onSubmit={this.props.onSubmit}>
-          <SearchFormBtn type="submit">
-            <FaSearch />
-          </SearchFormBtn>
+        <SearchFormInput
+          name="seachField"
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          onChange={handleChange}
+          value={query}
+        />
+      </SearchForm>
+    </SearchbarFormBox>
+  );
+};
 
-          <SearchFormInput
-            name="seachField"
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            onChange={this.handleChange}
-            value={this.query}
-          />
-        </SearchForm>
-      </SearchbarFormBox>
-    );
-  }
-}
+Searchbar.propTypes = {
+  handleSubmit: PropTypes.func.isRequired,
+};
